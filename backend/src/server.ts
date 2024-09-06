@@ -2,10 +2,14 @@ import express, { Request, Response } from "express"
 import cors from "cors"
 import cookieParser from "cookie-parser"
 import "dotenv/config"
+import { PORT } from "./constants/env"
+import errorHandler from "./middlewares/errorHandler"
+import authRouter from "./routes/auth.route"
+import connectDB from "./utils/db"
 
 
 const app = express()
-const port = 5000
+
 
 app.use(express.json())
 app.use(express.urlencoded({extended:true}))
@@ -16,11 +20,14 @@ app.use(cors({
   })
 );
 
-app.get("/",(req:Request,res:Response)=>{
-    res.status(200).send("hello world")
-})
+app.use("/auth", authRouter)
 
 
-app.listen(port,()=>{
-    console.log("server is running on http://localhost:5000")
+
+
+app.use(errorHandler)
+
+app.listen(PORT,()=>{
+    connectDB()
+    console.log(`server is running on http://localhost:${PORT}`)
 })
