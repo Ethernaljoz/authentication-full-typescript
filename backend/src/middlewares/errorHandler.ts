@@ -6,15 +6,15 @@ import AppError from "../utils/AppError";
 
 const errorHandler:ErrorRequestHandler = async (error,req,res,next)=>{
 
+    if(error instanceof AppError){
+        return handleAppError(res, error)
+    }
 
     if(error instanceof z.ZodError){
         return handleZodError(res, error)
     }
 
 
-    if(error instanceof AppError){
-        return handleAppError(res, error)
-    }
 
     console.log(error)
     return res.status(INTERNAL_SERVER_ERROR).send("Internal server error")
@@ -33,6 +33,9 @@ const handleZodError = (res:Response, error:z.ZodError)=>{
     
     return res.status(BAD_REQUEST).json({ errors ,message: error.message });
 }
+
+
+
 const handleAppError = (res:Response, error:AppError)=>{
     return res.status(error.statusCode).json({message: error.message})
 }
