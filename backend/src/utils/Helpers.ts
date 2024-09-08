@@ -10,38 +10,6 @@ export const fifteenMinutesFromNow = () => new Date( Date.now() + 15 * 60 * 1000
 
 
 
-// ------------ @ cookie function---------------------
-
-interface setAuthCookieParams {
-    res:Response,
-    accessToken:string,
-    refreshToken:string
-}
-
-const secure = process.env.NODE_ENV !== "developement"
-
-const defaultCookieOptions: CookieOptions = {
-    sameSite:"strict",
-    httpOnly:true,
-    secure
-}
-
-const getAccessTokenCookieOptions = ()=>({
-    ...defaultCookieOptions,
-    expires:fifteenMinutesFromNow()
-})
-
-const getRefreshTokenCookieOptions = (): CookieOptions => ({
-    ...defaultCookieOptions,
-    expires:ThirtyDaysFromNow(),
-    path:"/auth/refresh"
-})
-
-export const setAuthCookie = ({res,accessToken,refreshToken}:setAuthCookieParams)=>{
-    return res.cookie("accessToken",accessToken,getAccessTokenCookieOptions()).cookie("refreshToken",refreshToken, getRefreshTokenCookieOptions())
-}
-
-
 
 
 
