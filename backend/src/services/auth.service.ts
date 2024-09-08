@@ -19,7 +19,7 @@ interface createAccountParams {
 
 export const createAccount = async (data:createAccountParams)=>{
 
-    const existingUser = UserModel.exists({email:data.email})
+    const existingUser = await UserModel.exists({email:data.email})
 
     appAssert(!existingUser, CONFLICT, "Email already in use");
 

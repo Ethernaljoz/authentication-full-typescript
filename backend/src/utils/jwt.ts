@@ -15,6 +15,7 @@ type refreshTokenPayload = {
 };
 
 type signOptionsAndSecret = SignOptions & { secret: string}
+type verifyOptionsAndSecret = SignOptions & { secret?: string}
 
  // -------------------@options-----------------------------
 
@@ -41,4 +42,26 @@ options?: signOptionsAndSecret
     return jwt.sign(payload, secret, {...defaultOptions,...signOpts})
 }
 
+
+export const verifyToken = <TPayload extends object = accessTokenPayload> (
+    token:string, 
+    options?:verifyOptionsAndSecret
+) => {
+    const { secret = JWT_SECRET, ...verifyOpts} = options || {}
+    try {
+        const payload = jwt.verify(token, secret, {
+            ...defaultOptions,
+            ...verifyOpts
+        }) as TPayload
+
+        return { payload }
+
+    } catch (error:any) {
+        return {
+            error : error.message
+        }
+    }
+
+    
+}
 
