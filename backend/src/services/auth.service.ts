@@ -3,9 +3,9 @@ import SessionModel from "../models/session.model"
 import UserModel from "../models/user.model"
 import VerificationCodeModel from "../models/verificationCode.model"
 import { appAssert } from "../utils/AppError"
-import { oneYearFromNow } from "../utils/Helpers"
+import { OneDays, ThirtyDaysFromNow, oneYearFromNow } from "../utils/Helpers"
 import { verificationCodeType } from "../utils/Types"
-import { refreshTokenOptions, signToken } from "../utils/jwt"
+import { refreshTokenOptions, refreshTokenPayload, signToken, verifyToken } from "../utils/jwt"
 
 
 
@@ -88,4 +88,32 @@ export const login = async (data:loginParams)=>{
     accessToken,
     refreshToken
   };
+}
+
+
+export const refreshUserAccessToken = async(refreshToken : string)=>{
+    const { payload } =  verifyToken<refreshTokenPayload>(refreshToken,{secret:refreshTokenOptions.secret})
+    appAssert(payload, UNAUTHORIZED, "Invalid refresh token")
+
+    const session = await SessionModel.findById(payload.sessionId)
+    const now = Date.now()
+    appAssert(session && session.expiresAt.getTime() > now, UNAUTHORIZED, "Session expired")
+
+    const sessionNeedsRefresh = session.expiresAt.getTime() - now <= OneDays;
+
+    if(sessionNeedsRefresh){
+        session.expiresAt = ThirtyDaysFromNow()
+        await session.save()
+    }
+
+    const accessToken = signToken({userId:session.userId,
+        sessionId:session._id
+    })
+
+    const newRefreshToken = sessionNeedsRefresh ? signToken({sessionId:session._id},refreshTokenOptions) : undefined
+
+    return {
+        accessToken,
+        newRefreshToken
+    }
 }

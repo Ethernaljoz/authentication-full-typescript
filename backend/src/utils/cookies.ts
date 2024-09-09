@@ -8,22 +8,22 @@ interface setAuthCookieParams {
 }
 
 const secure = process.env.NODE_ENV !== "developement";
-const REFRESH_PATH = "/auth/refresh"
+export const REFRESH_PATH = "/auth/refresh"
 const defaultCookieOptions: CookieOptions = {
   sameSite: "strict",
   httpOnly: true,
   secure,
 };
 
-const getAccessTokenCookieOptions = () => ({
+export const getAccessTokenCookieOptions = () => ({
   ...defaultCookieOptions,
   expires: fifteenMinutesFromNow(),
 });
 
-const getRefreshTokenCookieOptions = (): CookieOptions => ({
+export const getRefreshTokenCookieOptions = (): CookieOptions => ({
   ...defaultCookieOptions,
   expires: ThirtyDaysFromNow(),
-  path: "/auth/refresh",
+  path: REFRESH_PATH,
 });
 
 export const setAuthCookie = ({

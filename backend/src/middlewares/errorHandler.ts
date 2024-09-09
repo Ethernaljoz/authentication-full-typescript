@@ -3,8 +3,13 @@ import { BAD_REQUEST, INTERNAL_SERVER_ERROR } from "../constants/httpCode";
 
 import { z } from "zod"
 import AppError from "../utils/AppError";
+import { REFRESH_PATH, clearAuthCookie } from "../utils/cookies";
 
 const errorHandler:ErrorRequestHandler = async (error,req,res,next)=>{
+
+    if(req.path === REFRESH_PATH){
+        clearAuthCookie(res)
+    }
 
     if(error instanceof AppError){
         return handleAppError(res, error)
