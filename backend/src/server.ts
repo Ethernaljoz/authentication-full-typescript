@@ -2,7 +2,7 @@ import express, { Request, Response } from "express"
 import cors from "cors"
 import cookieParser from "cookie-parser"
 import "dotenv/config"
-import { PORT } from "./constants/env"
+import { APP_ORIGIN, PORT } from "./constants/env"
 import errorHandler from "./middlewares/errorHandler"
 import authRouter from "./routes/auth.route"
 import connectDB from "./utils/db"
@@ -15,8 +15,8 @@ app.use(express.json())
 app.use(express.urlencoded({extended:true}))
 app.use(cookieParser())
 app.use(cors({
-    // origin: process.env.APP_ORIGIN,
-    // credentials: true,
+    origin: APP_ORIGIN,
+    credentials: true,
   })
 );
 

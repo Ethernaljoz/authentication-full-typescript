@@ -1,4 +1,6 @@
-import { CONFLICT, UNAUTHORIZED } from "../constants/httpCode"
+import { getVerifyEmailTemplate } from "../constants/emailTemplate"
+import { APP_ORIGIN } from "../constants/env"
+import { CONFLICT, INTERNAL_SERVER_ERROR, NOT_FOUND, UNAUTHORIZED } from "../constants/httpCode"
 import SessionModel from "../models/session.model"
 import UserModel from "../models/user.model"
 import VerificationCodeModel from "../models/verificationCode.model"
@@ -6,6 +8,7 @@ import { appAssert } from "../utils/AppError"
 import { OneDays, ThirtyDaysFromNow, oneYearFromNow } from "../utils/Helpers"
 import { verificationCodeType } from "../utils/Types"
 import { refreshTokenOptions, refreshTokenPayload, signToken, verifyToken } from "../utils/jwt"
+import { sendMail } from "../utils/sendMail"
 
 
 
@@ -36,7 +39,18 @@ export const createAccount = async (data:createAccountParams)=>{
         expiresAt: oneYearFromNow()
     })
 
+
     //send email
+    const url = `${APP_ORIGIN}/auth/email/verify/${verificationCode._id}`
+
+    const { error } = await sendMail({
+      to: user.email,
+      ...getVerifyEmailTemplate(url),
+    });
+
+    if(error){
+        console.log(error)
+    } 
 
     //@ session
     const session = await SessionModel.create({
@@ -115,5 +129,30 @@ export const refreshUserAccessToken = async(refreshToken : string)=>{
     return {
         accessToken,
         newRefreshToken
+    }
+}
+
+
+export const verifyEmail = async(code: string)=>{
+    const validCode = await VerificationCodeModel.findOne({
+        id:code,
+        type: verificationCodeType.EmailVerification,
+        expiresAt: {$gt: new Date}
+    })
+
+    appAssert(validCode,NOT_FOUND, "Invalid or expired verification code")
+
+    const updatedUser = await UserModel.findByIdAndUpdate(
+        validCode.userId,
+        {verified: true},
+        {new:true}
+    )
+    
+    appAssert(updatedUser,INTERNAL_SERVER_ERROR,"failed to verify email")
+
+    await validCode.deleteOne()
+
+    return {
+        user:updatedUser.omitPassword()
     }
 }
