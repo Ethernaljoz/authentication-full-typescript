@@ -1,11 +1,11 @@
-import { getVerifyEmailTemplate } from "../constants/emailTemplate"
+import { getPasswordResetTemplate, getVerifyEmailTemplate } from "../constants/emailTemplate"
 import { APP_ORIGIN } from "../constants/env"
-import { CONFLICT, INTERNAL_SERVER_ERROR, NOT_FOUND, UNAUTHORIZED } from "../constants/httpCode"
+import { CONFLICT, INTERNAL_SERVER_ERROR, NOT_FOUND, TOO_MANY_REQUESTS, UNAUTHORIZED } from "../constants/httpCode"
 import SessionModel from "../models/session.model"
 import UserModel from "../models/user.model"
 import VerificationCodeModel from "../models/verificationCode.model"
 import { appAssert } from "../utils/AppError"
-import { OneDays, ThirtyDaysFromNow, oneYearFromNow } from "../utils/Helpers"
+import { OneDays, ThirtyDaysFromNow, fiveMinutesAgo, oneHourFromNow, oneYearFromNow } from "../utils/Helpers"
 import { verificationCodeType } from "../utils/Types"
 import { refreshTokenOptions, refreshTokenPayload, signToken, verifyToken } from "../utils/jwt"
 import { sendMail } from "../utils/sendMail"
@@ -41,7 +41,7 @@ export const createAccount = async (data:createAccountParams)=>{
 
 
     //send email
-    const url = `${APP_ORIGIN}/auth/email/verify/${verificationCode._id}`
+    const url = `${APP_ORIGIN}/email/verify/${verificationCode._id}`
 
     const { error } = await sendMail({
       to: user.email,
@@ -49,7 +49,7 @@ export const createAccount = async (data:createAccountParams)=>{
     });
 
     if(error){
-        console.log(error)
+        return console.error({ error });
     } 
 
     //@ session
@@ -137,7 +137,7 @@ export const verifyEmail = async(code: string)=>{
     const validCode = await VerificationCodeModel.findOne({
         id:code,
         type: verificationCodeType.EmailVerification,
-        expiresAt: {$gt: new Date}
+        expiresAt: {$gt: new Date()}
     })
 
     appAssert(validCode,NOT_FOUND, "Invalid or expired verification code")
@@ -154,5 +154,42 @@ export const verifyEmail = async(code: string)=>{
 
     return {
         user:updatedUser.omitPassword()
+    }
+}
+
+
+export const sendPasswordResetEmail = async(email: string)=>{
+    const user = await UserModel.findOne({email,})
+    appAssert(user,NOT_FOUND,"User not found")
+
+    const rate = fiveMinutesAgo()
+
+    const count = await VerificationCodeModel.countDocuments({
+        userId:user._id,
+        type: verificationCodeType.PasswordReset,
+        createdAt:{$gt:fiveMinutesAgo()}
+    })
+
+    appAssert(count <=1, TOO_MANY_REQUESTS,"Too many requests, please try again later")
+
+    const expiresAt = oneHourFromNow()
+    const verificationCode = await VerificationCodeModel.create({
+        userId:user._id,
+        type:verificationCodeType.PasswordReset,
+        expiresAt
+    })
+
+    const url = `${APP_ORIGIN}/password/reset?code=${verificationCode._id}&exp=${expiresAt.getTime()}`
+
+    const { data, error } = await sendMail({
+      to: email,
+      ...getPasswordResetTemplate(url),
+    });
+
+    appAssert(data?.id, INTERNAL_SERVER_ERROR,`${error?.name} - ${error?.message}`)
+
+    return {
+        url,
+        emailId : data.id
     }
 }

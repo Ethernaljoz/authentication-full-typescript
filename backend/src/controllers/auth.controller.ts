@@ -1,6 +1,6 @@
 import { CREATED, OK, UNAUTHORIZED } from "../constants/httpCode";
-import { loginSchema, registerSchema, verificationCodeSchema } from "../schemas/auth.schema";
-import { createAccount, login, refreshUserAccessToken, verifyEmail } from "../services/auth.service";
+import { emailSchema, loginSchema, registerSchema, verificationCodeSchema } from "../schemas/auth.schema";
+import { createAccount, login, refreshUserAccessToken, sendPasswordResetEmail, verifyEmail } from "../services/auth.service";
 import { clearAuthCookie, getAccessTokenCookieOptions, getRefreshTokenCookieOptions, setAuthCookie } from "../utils/cookies";
 import catchErrors from "../utils/catchErrors";
 import { verifyToken } from "../utils/jwt";
@@ -12,8 +12,8 @@ import { appAssert } from "../utils/AppError";
 export const registerHandler = catchErrors(
     async(req,res)=>{
         const request = registerSchema.parse({...req.body, userAgent:req.headers["user-agent"]})
-        
-        const {user, accessToken, refreshToken }= await createAccount(request)
+
+        const { user, accessToken, refreshToken } = await createAccount(request);
 
         return setAuthCookie({res, accessToken, refreshToken}).status(CREATED).json(user)
     }
@@ -80,3 +80,16 @@ export const verifyEmailHandler = catchErrors(
         })
     }
 )
+
+
+export const sendPasswordResetHandler = catchErrors(
+    async (req, res) => {
+        const email = emailSchema.parse(req.body.email)
+        
+        await sendPasswordResetEmail(email)
+
+        return res.status(OK).json({
+          message: "Password reset email sent",
+        });
+    }
+);

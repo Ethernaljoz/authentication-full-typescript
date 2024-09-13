@@ -8,8 +8,8 @@ type Params = {
     html:string,
 }
 
-const getFromEmail = () => NODE_ENV === "developement" ? "onboarding@resend.dev" : EMAIL_SENDER
-const getToEmail = (to: string) => NODE_ENV === "developement" ? "delivered@resend.dev" : to;
+const getFromEmail = () => NODE_ENV === "development" ? "onboarding@resend.dev" : EMAIL_SENDER
+const getToEmail = (to: string) => NODE_ENV === "development" ? "delivered@resend.dev" : to;
 
 const resend = new Resend(RESEND_API_KEY)
 
