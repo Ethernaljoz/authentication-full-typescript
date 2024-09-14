@@ -1,6 +1,6 @@
 import { CREATED, OK, UNAUTHORIZED } from "../constants/httpCode";
-import { emailSchema, loginSchema, registerSchema, verificationCodeSchema } from "../schemas/auth.schema";
-import { createAccount, login, refreshUserAccessToken, sendPasswordResetEmail, verifyEmail } from "../services/auth.service";
+import { emailSchema, loginSchema, registerSchema, resetPasswordSchema, verificationCodeSchema } from "../schemas/auth.schema";
+import { createAccount, login, refreshUserAccessToken, resetPassword, sendPasswordResetEmail, verifyEmail } from "../services/auth.service";
 import { clearAuthCookie, getAccessTokenCookieOptions, getRefreshTokenCookieOptions, setAuthCookie } from "../utils/cookies";
 import catchErrors from "../utils/catchErrors";
 import { verifyToken } from "../utils/jwt";
@@ -12,7 +12,7 @@ import { appAssert } from "../utils/AppError";
 export const registerHandler = catchErrors(
     async(req,res)=>{
         const request = registerSchema.parse({...req.body, userAgent:req.headers["user-agent"]})
-
+        
         const { user, accessToken, refreshToken } = await createAccount(request);
 
         return setAuthCookie({res, accessToken, refreshToken}).status(CREATED).json(user)
@@ -22,12 +22,12 @@ export const registerHandler = catchErrors(
 
 export const loginHandler = catchErrors(
     async(req, res) => {
-        const resquest = loginSchema.parse({
+        const request = loginSchema.parse({
             ...req.body,
             userAgent:req.headers["user-agent"]
         })
 
-        const {user, accessToken, refreshToken} = await login(resquest)
+        const {user, accessToken, refreshToken} = await login(request)
 
         return setAuthCookie({res, accessToken, refreshToken}).status(OK).json({
             message: "login successfully"
@@ -93,3 +93,16 @@ export const sendPasswordResetHandler = catchErrors(
         });
     }
 );
+
+
+export const resetPasswordHandler = catchErrors(
+    async(req, res)=>{
+        const request = resetPasswordSchema.parse(req.body)
+
+        await resetPassword(request)
+
+        return clearAuthCookie(res).status(OK).json({
+            message:"User password reset successfully"
+        })
+    }
+)

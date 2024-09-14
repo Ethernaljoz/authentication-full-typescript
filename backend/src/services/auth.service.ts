@@ -9,7 +9,7 @@ import { OneDays, ThirtyDaysFromNow, fiveMinutesAgo, oneHourFromNow, oneYearFrom
 import { verificationCodeType } from "../utils/Types"
 import { refreshTokenOptions, refreshTokenPayload, signToken, verifyToken } from "../utils/jwt"
 import { sendMail } from "../utils/sendMail"
-
+import bcrypt from "bcrypt"
 
 
 interface createAccountParams {
@@ -135,7 +135,7 @@ export const refreshUserAccessToken = async(refreshToken : string)=>{
 
 export const verifyEmail = async(code: string)=>{
     const validCode = await VerificationCodeModel.findOne({
-        id:code,
+        _id:code,
         type: verificationCodeType.EmailVerification,
         expiresAt: {$gt: new Date()}
     })
@@ -161,8 +161,6 @@ export const verifyEmail = async(code: string)=>{
 export const sendPasswordResetEmail = async(email: string)=>{
     const user = await UserModel.findOne({email,})
     appAssert(user,NOT_FOUND,"User not found")
-
-    const rate = fiveMinutesAgo()
 
     const count = await VerificationCodeModel.countDocuments({
         userId:user._id,
@@ -192,4 +190,37 @@ export const sendPasswordResetEmail = async(email: string)=>{
         url,
         emailId : data.id
     }
+}
+
+type ResetParams = {
+    verificationCode:string,
+    password:string
+}
+export const resetPassword = async ({verificationCode, password}:ResetParams)=>{
+
+    const validCode = await VerificationCodeModel.findOne({
+        _id:verificationCode,
+        type:verificationCodeType.PasswordReset,
+        expiresAt:{$gt: new Date()}
+    })
+
+    appAssert(validCode,NOT_FOUND,"Invalid or expired verification code")
+
+    const updatedUser = await UserModel.findByIdAndUpdate(
+        validCode.userId, 
+        {password: await bcrypt.hash(password, 12),},
+        {new:true}
+    );
+
+    appAssert(updatedUser,INTERNAL_SERVER_ERROR,"failed to reset the user password")
+
+    await validCode.deleteOne()
+
+    await SessionModel.deleteMany({userId:validCode.userId})
+
+    return {
+        user: updatedUser.omitPassword()
+    }
+
+
 }
