@@ -6,6 +6,7 @@ import { APP_ORIGIN, PORT } from "./constants/env"
 import errorHandler from "./middlewares/errorHandler"
 import authRouter from "./routes/auth.route"
 import connectDB from "./utils/db"
+import userRouter from "./routes/user.route"
 
 
 const app = express()
@@ -21,6 +22,7 @@ app.use(cors({
 );
 
 app.use("/auth", authRouter)
+app.use("/user", userRouter)
 
 
 

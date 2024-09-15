@@ -209,7 +209,6 @@ export const resetPassword = async ({verificationCode, password}:ResetParams)=>{
     const updatedUser = await UserModel.findByIdAndUpdate(
         validCode.userId, 
         {password: await bcrypt.hash(password, 12),},
-        {new:true}
     );
 
     appAssert(updatedUser,INTERNAL_SERVER_ERROR,"failed to reset the user password")
