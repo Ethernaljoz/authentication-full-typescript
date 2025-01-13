@@ -12,7 +12,7 @@ import { sendMail } from "../utils/sendMail"
 import bcrypt from "bcrypt"
 
 
-interface createAccountParams {
+interface CreateAccountParams {
     username:string,
     email:string,
     password:string,
@@ -20,58 +20,55 @@ interface createAccountParams {
 }
 
 
-export const createAccount = async (data:createAccountParams)=>{
+export const createAccount = async (data: CreateAccountParams) => {
 
-    const existingUser = await UserModel.exists({email:data.email})
-
+    const existingUser = await UserModel.exists({
+      email: data.email,
+    });
     appAssert(!existingUser, CONFLICT, "Email already in use");
-
+  
     const user = await UserModel.create({
-        username:data.username,
-        email:data.email,
-        password:data.password
-    })
-
-    // verification code
+      username: data.username,
+      email: data.email,
+      password: data.password,
+      userAgent: data.userAgent
+    });
+    const userId = user._id;
     const verificationCode = await VerificationCodeModel.create({
-        userId:user._id,
-        type:verificationCodeType.EmailVerification,
-        expiresAt: oneYearFromNow()
-    })
-
-
-    //send email
-    const url = `${APP_ORIGIN}/email/verify/${verificationCode._id}`
-
-    const { error } = await sendMail({
+      userId,
+      type: verificationCodeType.EmailVerification,
+      expiresAt: oneYearFromNow(),
+    });
+  
+    const url = `${APP_ORIGIN}/email/verify/${verificationCode._id}`;
+  
+    const  sentMessageInfo  = await sendMail({
       to: user.email,
       ...getVerifyEmailTemplate(url),
     });
-
-    if(error){
-        return console.error({ error });
-    } 
-
-    //@ session
+    if (sentMessageInfo.rejected) console.error(sentMessageInfo.response);
+  
     const session = await SessionModel.create({
-        userId:user._id,
-        userAgent:data.userAgent
-    })
-
-    //@ access and refresh token
-    const accessToken = signToken({userId:user._id, sessionId:session._id })
-    
-    const refreshToken = signToken({sessionId:session._id }, refreshTokenOptions)
-
-
-
+      userId,
+      userAgent: data.userAgent,
+    });
+  
+    const refreshToken = signToken(
+      {
+        sessionId: session._id,
+      },
+      refreshTokenOptions
+    );
+    const accessToken = signToken({
+      userId,
+      sessionId: session._id,
+    });
     return {
-        user: user.omitPassword(),
-        accessToken,
-        refreshToken
-    }
-
-}
+      user: user.omitPassword(),
+      accessToken,
+      refreshToken,
+    };
+  };
 
 
 interface loginParams {
@@ -92,7 +89,7 @@ export const login = async (data:loginParams)=>{
     userAgent: data.userAgent,
   });
 
-  //@ access and refresh token
+
   const accessToken = signToken({ userId: user._id, sessionId: session._id });
 
   const refreshToken = signToken({ sessionId: session._id }, refreshTokenOptions);
@@ -179,16 +176,16 @@ export const sendPasswordResetEmail = async(email: string)=>{
 
     const url = `${APP_ORIGIN}/password/reset?code=${verificationCode._id}&exp=${expiresAt.getTime()}`
 
-    const { data, error } = await sendMail({
+    const sentMessageInfo= await sendMail({
       to: email,
       ...getPasswordResetTemplate(url),
     });
 
-    appAssert(data?.id, INTERNAL_SERVER_ERROR,`${error?.name} - ${error?.message}`)
+    appAssert(sentMessageInfo.rejected, INTERNAL_SERVER_ERROR,`${sentMessageInfo.response}`)
 
     return {
         url,
-        emailId : data.id
+        emailId : sentMessageInfo.messageId
     }
 }
 
@@ -220,6 +217,5 @@ export const resetPassword = async ({verificationCode, password}:ResetParams)=>{
     return {
         user: updatedUser.omitPassword()
     }
-
 
 }

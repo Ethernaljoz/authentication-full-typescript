@@ -4,7 +4,7 @@ import { loginHandler, logoutHandler, refreshHandler, registerHandler, resetPass
 
 const authRouter = Router()
 
-// prefix /auth
+// prefix /api/auth
 authRouter.post("/register", registerHandler)
 authRouter.post("/login", loginHandler)
 authRouter.get("/logout", logoutHandler)

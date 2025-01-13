@@ -4,7 +4,7 @@ import { getAllUserHandler } from "../controllers/user.controller";
 
 const userRouter = Router()
 
-// prefix user
+// prefix /api/user
 userRouter.get("/", getAllUserHandler);
 
 export default userRouter
