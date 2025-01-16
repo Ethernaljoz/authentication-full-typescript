@@ -1,6 +1,5 @@
 import { NOT_FOUND,OK } from "../constants/httpCode";
-import UserModel, { UserDocument } from "../models/user.model";
-import { refreshUserAccessToken } from "../services/auth.service";
+import UserModel from "../models/user.model";
 import { appAssert } from "../utils/AppError";
 import catchErrors from "../utils/catchErrors";
 
