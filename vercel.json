@@ -14,5 +14,5 @@
         "methods": ["GET", "POST", "PUT", "DELETE"]
       }
     ],
-    "functions": { "dist/**": { "maxDuration": 50 } }
+    "functions": { "dist/**": { "maxDuration": 30 } }
   }
