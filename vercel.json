@@ -5,7 +5,8 @@
         "src": "dist/server.js",
         "use": "@vercel/node",
         "config": {
-            "includeFiles": ["dist/**"]
+            "includeFiles": ["dist/**"],
+            "maxDuration": 30
         }
       }
     ],
@@ -15,5 +16,5 @@
         "dest": "dist/server.js",
         "methods": ["GET", "POST", "PUT", "DELETE"]
       }
-    ],
+    ]
   }
